@@ -206,44 +206,49 @@ namespace Microsoft.Xna.Framework.Content
 
             // Replace Windows path separators with local path separators
             assetName = GetFilename(assetName);
-
-            // Get the real file name
-            if ((typeof(T) == typeof(Curve))) 
-            {				
-                assetName = CurveReader.Normalize(assetName);
-            }
-            else if ((typeof(T) == typeof(Texture2D)))
-            {
-                assetName = Texture2DReader.Normalize(assetName);
-            }
-            else if ((typeof(T) == typeof(SpriteFont)))
-            {
-                assetName = SpriteFontReader.Normalize(assetName);
-            }
-            else if ((typeof(T) == typeof(Effect)))
-            {
-                assetName = Effect.Normalize(assetName);
-            }
-            else if ((typeof(T) == typeof(Song)))
-            {
-                assetName = SongReader.Normalize(assetName);
-            }
-            else if ((typeof(T) == typeof(SoundEffect)))
-            {
-                assetName = SoundEffectReader.Normalize(assetName);
-            }
-            else if ((typeof(T) == typeof(Video)))
-            {
-                assetName = Video.Normalize(assetName);
-            }
-
-            if (string.IsNullOrEmpty(assetName))
-            {
-                throw new ContentLoadException("Could not load " + originalAssetName + " asset!");
-            }
-
             if (!Path.HasExtension(assetName))
-                assetName = string.Format("{0}.xnb", assetName);
+            {
+
+
+
+                // Get the real file name
+                if ((typeof(T) == typeof(Curve)))
+                {
+                    assetName = CurveReader.Normalize(assetName);
+                }
+                else if ((typeof(T) == typeof(Texture2D)))
+                {
+                    assetName = Texture2DReader.Normalize(assetName);
+                }
+                else if ((typeof(T) == typeof(SpriteFont)))
+                {
+                    assetName = SpriteFontReader.Normalize(assetName);
+                }
+                else if ((typeof(T) == typeof(Effect)))
+                {
+                    assetName = Effect.Normalize(assetName);
+                }
+                else if ((typeof(T) == typeof(Song)))
+                {
+                    assetName = SongReader.Normalize(assetName);
+                }
+                else if ((typeof(T) == typeof(SoundEffect)))
+                {
+                    assetName = SoundEffectReader.Normalize(assetName);
+                }
+                else if ((typeof(T) == typeof(Video)))
+                {
+                    assetName = Video.Normalize(assetName);
+                }
+
+                if (string.IsNullOrEmpty(assetName))
+                {
+                    throw new ContentLoadException("Could not load " + originalAssetName + " asset!");
+                }
+
+                if (!Path.HasExtension(assetName))
+                    assetName = string.Format("{0}.xnb", assetName);
+            }
 
             if (Path.GetExtension(assetName).ToLower() == ".xnb")
             {
