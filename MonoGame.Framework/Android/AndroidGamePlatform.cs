@@ -159,7 +159,7 @@ namespace Microsoft.Xna.Framework
         public override bool BeforeRun()
         {
             // Get the Accelerometer going
-            Accelerometer.SetupAccelerometer();
+            //Accelerometer.SetupAccelerometer();
             Window.Run(1 / Game.TargetElapsedTime.TotalSeconds);
             //Window.Pause();
 
@@ -191,7 +191,7 @@ namespace Microsoft.Xna.Framework
             {
                 IsActive = true;
                 Window.Resume();
-                Accelerometer.Resume();
+                //Accelerometer.Resume();
                 Sound.ResumeAll();
                 MediaPlayer.Resume();
             }
@@ -204,7 +204,7 @@ namespace Microsoft.Xna.Framework
             {
                 IsActive = false;
                 Window.Pause();
-                Accelerometer.Pause();
+                //Accelerometer.Pause();
                 Sound.PauseAll();
                 MediaPlayer.Pause();
             }
