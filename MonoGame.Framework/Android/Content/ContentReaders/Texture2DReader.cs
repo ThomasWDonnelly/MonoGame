@@ -47,7 +47,8 @@ namespace Microsoft.Xna.Framework.Content
         {
             // Do nothing
         }
-
+		
+		
 		public static string Normalize(string FileName)
 		{
 		    int index = FileName.LastIndexOf(Path.DirectorySeparatorChar);
@@ -57,28 +58,22 @@ namespace Microsoft.Xna.Framework.Content
                 file = FileName.Substring(index + 1, FileName.Length - index - 1);
                 path = FileName.Substring(0, index);
             }
-		    string[] files = Game.Activity.Assets.List(path);
-
-            if (Contains(file, files))
-				return FileName;
 			
-			// Check the file extension
-			if (!string.IsNullOrEmpty(Path.GetExtension(FileName)))
-			{
-				return null;
+			if (!string.IsNullOrEmpty(Path.GetExtension(FileName))){
+				return Path.Combine(path, TryFindAnyCased(file, path, ".xnb", ".jpg", ".bmp", ".jpeg", ".png", ".gif"));
 			}
-		
-            return Path.Combine(path, TryFindAnyCased(file, files, ".xnb", ".jpg", ".bmp", ".jpeg", ".png", ".gif"));
+			
+			return FileName;
 		}
 
-        private static string TryFindAnyCased(string search, string[] arr, params string[] extensions)
+        private static string TryFindAnyCased(string search, string path, params string[] extensions)
         {
-            return arr.FirstOrDefault(s => extensions.Any(ext => s.ToLower() == (search.ToLower() + ext)));
+            return Game.Activity.Assets.List(path).FirstOrDefault(s => extensions.Any(ext => s.ToLower() == (search.ToLower() + ext)));
         }
 
-        private static bool Contains(string search, string[] arr)
+        private static bool Contains(string search, string path)
         {
-            return arr.Any(s => s == search);
+            return Game.Activity.Assets.List(path).Any(s => s == search);
         }
 
         protected internal override Texture2D Read(ContentReader reader, Texture2D existingInstance)

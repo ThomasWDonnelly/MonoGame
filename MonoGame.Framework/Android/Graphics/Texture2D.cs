@@ -251,6 +251,9 @@ namespace Microsoft.Xna.Framework.Graphics
 			
 			ESImage theTexture = new ESImage(image, graphicsDevice.PreferedFilter);			
 			Texture2D result = new Texture2D(graphicsDevice, theTexture);
+	
+			image.Dispose();			
+			theTexture.Dispose();			
 			
 			return result;
         }
