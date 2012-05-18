@@ -11,6 +11,7 @@ using Android.Views;
 using Android.Widget;
 
 using Microsoft.Xna.Framework.Input.Touch;
+using Android.Hardware;
 
 namespace Microsoft.Xna.Framework
 {
@@ -75,11 +76,13 @@ namespace Microsoft.Xna.Framework
 	internal class OrientationListener : OrientationEventListener
 	{
 		AndroidGameActivity activity;
-		
-		public OrientationListener(AndroidGameActivity activity) : base(activity, 1)
-		{
-			this.activity = activity;
-		}
+
+
+        public OrientationListener(AndroidGameActivity activity)
+            : base(activity, SensorDelay.Game)
+        {
+            this.activity = activity;
+        }
 		
 		private bool inprogress = false;
 		
