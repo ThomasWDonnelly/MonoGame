@@ -77,13 +77,6 @@ namespace Microsoft.Xna.Framework.Input
             maps[Keycode.DpadUp] = Keys.Up;
             maps[Keycode.DpadDown] = Keys.Down;
 			maps[Keycode.DpadCenter] = Keys.Enter;
-
-            maps[Keycode.Back] = Keys.Back;
-            maps[Keycode.Tab] = Keys.Tab;
-            maps[Keycode.Enter] = Keys.Enter;
-            maps[Keycode.Space] = Keys.Space;
-            maps[Keycode.Home] = Keys.Home;
-            maps[Keycode.Enter] = Keys.Select;
             maps[Keycode.Num0] = Keys.D0;
             maps[Keycode.Num1] = Keys.D1;
             maps[Keycode.Num2] = Keys.D2;
@@ -94,7 +87,7 @@ namespace Microsoft.Xna.Framework.Input
             maps[Keycode.Num7] = Keys.D7;
             maps[Keycode.Num8] = Keys.D8;
             maps[Keycode.Num9] = Keys.D9;
-            maps[Keycode.A] = Keys.A;
+			maps[Keycode.A] = Keys.A;
             maps[Keycode.B] = Keys.B;
             maps[Keycode.C] = Keys.C;
             maps[Keycode.D] = Keys.D;
@@ -116,70 +109,16 @@ namespace Microsoft.Xna.Framework.Input
             maps[Keycode.T] = Keys.T;
             maps[Keycode.U] = Keys.U;
             maps[Keycode.V] = Keys.V;
-            maps[Keycode.W] = Keys.W;
-            maps[Keycode.X] = Keys.X;
-            maps[Keycode.Y] = Keys.Y;
-            maps[Keycode.Z] = Keys.Z;
-            maps[Keycode.Home] = Keys.LeftWindows;
-            maps[Keycode.Home] = Keys.RightWindows;
-            maps[Keycode.Home] = Keys.Apps;
-            maps[Keycode.Power] = Keys.Sleep;
-            maps[Keycode.Num0] = Keys.NumPad0;
-            maps[Keycode.Num1] = Keys.NumPad1;
-            maps[Keycode.Num2] = Keys.NumPad2;
-            maps[Keycode.Num3] = Keys.NumPad3;
-            maps[Keycode.Num4] = Keys.NumPad4;
-            maps[Keycode.Num5] = Keys.NumPad5;
-            maps[Keycode.Num6] = Keys.NumPad6;
-            maps[Keycode.Num7] = Keys.NumPad7;
-            maps[Keycode.Num8] = Keys.NumPad8;
-            maps[Keycode.Num9] = Keys.NumPad9;
-            maps[Keycode.Star] = Keys.Multiply;
-            maps[Keycode.Plus] = Keys.Add;
-            
-            maps[Keycode.Minus] = Keys.Subtract;
-            maps[Keycode.Period] = Keys.Decimal;
-            maps[Keycode.Slash] = Keys.Divide;
-            
-            maps[Keycode.AltLeft] = Keys.LeftAlt;
-            maps[Keycode.AltRight] = Keys.RightAlt;
-            
-            maps[Keycode.VolumeDown] = Keys.VolumeDown;
-            maps[Keycode.VolumeUp] = Keys.VolumeUp;
-            maps[Keycode.MediaNext] = Keys.MediaNextTrack;
-            maps[Keycode.MediaPrevious] = Keys.MediaPreviousTrack;
-            maps[Keycode.MediaStop] = Keys.MediaStop;
-            maps[Keycode.MediaPlayPause] = Keys.MediaPlayPause;
-
-            maps[Keycode.Semicolon] = Keys.OemSemicolon;
-            maps[Keycode.Plus] = Keys.OemPlus;
-            maps[Keycode.Comma] = Keys.OemComma;
-            maps[Keycode.Minus] = Keys.OemMinus;
-            maps[Keycode.Period] = Keys.OemPeriod;
-            maps[Keycode.Search] = Keys.OemQuestion;
-            maps[Keycode.Grave] = Keys.OemTilde;
-            maps[Keycode.LeftBracket] = Keys.OemOpenBrackets;
-            maps[Keycode.RightBracket] = Keys.OemCloseBrackets;
-            maps[Keycode.Backslash] = Keys.OemBackslash;
-            
-            maps[Keycode.MediaPlayPause] = Keys.Play;
-            
-            
-            maps[Keycode.Clear] = Keys.OemClear;
-            
-            maps[Keycode.MediaPlayPause] = Keys.Pause;
-            
-            maps[Keycode.A] = Keys.A;
-			maps[Keycode.Y] = Keys.Y;
-			maps[Keycode.X] = Keys.X;
-			maps[Keycode.B] = Keys.B;
-			maps[Keycode.S] = Keys.S;
 			maps[Keycode.W] = Keys.W;
-			maps[Keycode.D] = Keys.D;
+			maps[Keycode.X] = Keys.X;
+            maps[Keycode.Y] = Keys.Y;
+            maps[Keycode.C] = Keys.Z;
 			maps[Keycode.Back] = Keys.Escape;
             maps[Keycode.Back] = Keys.Back;
             maps[Keycode.Home] = Keys.Home;
-			maps[Keycode.Enter] = Keys.Enter;
+            maps[Keycode.Enter] = Keys.Enter;
+            maps[Keycode.Period] = Keys.OemPeriod;
+            maps[Keycode.Comma] = Keys.OemComma;
             // TODO: put in all the other mappings
             maps[Keycode.Menu] = Keys.Help;
             maps[Keycode.Search] = Keys.BrowserSearch;

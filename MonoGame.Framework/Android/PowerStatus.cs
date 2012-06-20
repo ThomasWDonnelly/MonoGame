@@ -64,8 +64,7 @@ namespace Microsoft.Xna.Framework
             {
                 _batteryLevel = intent.GetIntExtra("level", 0);
                 _batteryLevelScale = intent.GetIntExtra("scale", 100);
-				int status = intent.GetIntExtra("status", 1);
-				_batteryStatus = (BatteryStatus)status;
+                _batteryStatus = (BatteryStatus)intent.GetIntExtra("status", (int)BatteryStatus.Unknown);
             }
         }
 
@@ -77,11 +76,11 @@ namespace Microsoft.Xna.Framework
             {
                 switch (_batteryStatus)
                 {
-                    case BatteryManager.BatteryStatusCharging:
+                    case BatteryStatus.Charging:
                         return BatteryChargeStatus.Charging;
-                    case BatteryManager.BatteryStatusFull:
+                    case BatteryStatus.Full:
                         return BatteryChargeStatus.High;
-                    case BatteryManager.BatteryStatusUnknown:
+                    case BatteryStatus.Unknown:
                         return BatteryChargeStatus.Unknown;
                     default:
                         if (BatteryLifePercent >= 60.0f)

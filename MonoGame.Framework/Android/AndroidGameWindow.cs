@@ -353,8 +353,8 @@ namespace Microsoft.Xna.Framework
             switch (e.ActionMasked)
             {
                 // DOWN                
-                case MotionEventActions.PointerDown:
                 case MotionEventActions.Down:
+                case MotionEventActions.PointerDown:
                     index = collection.FindIndexById(e.GetPointerId(e.ActionIndex), out tlocation);
                     if (index < 0)
                     {
@@ -395,8 +395,8 @@ namespace Microsoft.Xna.Framework
                     }
 					break;
                 // CANCEL, OUTSIDE                
-                case MotionEventActions.Outside:
                 case MotionEventActions.Cancel:
+                case  MotionEventActions.Outside:
                     index = collection.FindIndexById(id, out tlocation);
                     if (index >= 0)
                     {
@@ -465,11 +465,11 @@ namespace Microsoft.Xna.Framework
 
                     if (_currentOrientation == DisplayOrientation.Portrait || _currentOrientation == DisplayOrientation.PortraitUpsideDown)
 				    {
-						Game.Activity.RequestedOrientation = ScreenOrientation.Portrait;			
+                        //Game.Activity.SetRequestedOrientation(ScreenOrientation.Portrait);						
 				    }
                     else if (_currentOrientation == DisplayOrientation.LandscapeLeft || _currentOrientation == DisplayOrientation.LandscapeRight)
 				    {
-						Game.Activity.RequestedOrientation = ScreenOrientation.Landscape;
+                        //Game.Activity.SetRequestedOrientation(ScreenOrientation.Landscape);						
 				    }	
 
                     if (OrientationChanged != null)

@@ -11,7 +11,6 @@ using Android.Views;
 using Android.Widget;
 
 using Microsoft.Xna.Framework.Input.Touch;
-using Android.Hardware;
 
 namespace Microsoft.Xna.Framework
 {
@@ -74,7 +73,7 @@ namespace Microsoft.Xna.Framework
 	{
 		AndroidGameActivity activity;
 		
-		public OrientationListener(AndroidGameActivity activity) : base(activity, SensorDelay.Game)
+		public OrientationListener(AndroidGameActivity activity) : base(activity, Android.Hardware.SensorDelay.Game)
 		{
 			this.activity = activity;
 		}
