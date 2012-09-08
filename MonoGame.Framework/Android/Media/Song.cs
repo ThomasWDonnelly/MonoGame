@@ -26,14 +26,24 @@ namespace Microsoft.Xna.Framework.Media
         {
             if (_androidPlayer != null)
             {
-                var afd = Game.Activity.Assets.OpenFd(_name);
-                if (afd != null)
+                _androidPlayer.Reset();
+
+                if (File.Exists(_name))
                 {
-                    _androidPlayer.Reset();
-                    _androidPlayer.SetDataSource(afd.FileDescriptor, afd.StartOffset, afd.Length);
-                    _androidPlayer.Prepare();
-                    _androidPlayer.Looping = true;
+                    var uri = Android.Net.Uri.Parse("file:///" + _name);
+                    _androidPlayer.SetDataSource(Android.App.Application.Context, uri);
                 }
+                else
+                {
+                    var afd = Game.Activity.Assets.OpenFd(_name);
+                    if (afd != null)
+                    {
+                        _androidPlayer.SetDataSource(afd.FileDescriptor, afd.StartOffset, afd.Length);
+                    }
+                }
+
+                _androidPlayer.Prepare();
+                _androidPlayer.Looping = true;
             }
         }
 

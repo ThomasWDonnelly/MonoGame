@@ -28,20 +28,25 @@ SOFTWARE.
 using System;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Collections.Generic;
 
 namespace Microsoft.Xna.Framework.Content
 {
     public sealed class ContentTypeReaderManager
     {
         ContentReader _reader;
-        ContentTypeReader[] contentReaders;		
-		
-		static string assemblyName;
-		
-		static ContentTypeReaderManager()
-		{
-			assemblyName = Assembly.GetExecutingAssembly().FullName;
-		}
+        ContentTypeReader[] contentReaders;
+
+        static string assemblyName;
+
+        static ContentTypeReaderManager()
+        {
+#if WINRT
+            assemblyName = typeof(ContentTypeReaderManager).GetTypeInfo().Assembly.FullName;
+#else
+            assemblyName = Assembly.GetExecutingAssembly().FullName;
+#endif
+        }
 
         public ContentTypeReaderManager(ContentReader reader)
         {
@@ -60,7 +65,7 @@ namespace Microsoft.Xna.Framework.Content
         // Trick to prevent the linker removing the code, but not actually execute the code
         static bool falseflag = false;
 
-		internal ContentTypeReader[] LoadAssetReaders()
+        internal ContentTypeReader[] LoadAssetReaders()
         {
 #pragma warning disable 0219, 0649
             // Trick to prevent the linker removing the code, but not actually execute the code
@@ -80,6 +85,7 @@ namespace Microsoft.Xna.Framework.Content
                 var hRectangleArrayReader = new ArrayReader<Rectangle>();
                 var hVector3ListReader = new ListReader<Vector3>();
                 var hStringListReader = new ListReader<StringReader>();
+                var hIntListReader = new ListReader<Int32>();
                 var hSpriteFontReader = new SpriteFontReader();
                 var hTexture2DReader = new Texture2DReader();
                 var hCharReader = new CharReader();
@@ -95,75 +101,122 @@ namespace Microsoft.Xna.Framework.Content
                 var hBasicEffectReader = new BasicEffectReader();
                 var hVertexBufferReader = new VertexBufferReader();
                 var hAlphaTestEffectReader = new AlphaTestEffectReader();
+                var hEnumSpriteEffectsReader = new EnumReader<Graphics.SpriteEffects>();
+                var hArrayFloatReader = new ArrayReader<float>();
+                var hArrayVector2Reader = new ArrayReader<Vector2>();
+                var hListVector2Reader = new ListReader<Vector2>();
+                var hArrayMatrixReader = new ArrayReader<Matrix>();
+                var hEnumBlendReader = new EnumReader<Graphics.Blend>();
+                var hNullableRectReader = new NullableReader<Rectangle>();
             }
 #pragma warning restore 0219, 0649
 
             int numberOfReaders;
-			
+
             // The first content byte i read tells me the number of content readers in this XNB file
             numberOfReaders = _reader.Read7BitEncodedInt();
             contentReaders = new ContentTypeReader[numberOfReaders];
-		
+
             // For each reader in the file, we read out the length of the string which contains the type of the reader,
             // then we read out the string. Finally we instantiate an instance of that reader using reflection
             for (int i = 0; i < numberOfReaders; i++)
             {
                 // This string tells us what reader we need to decode the following data
                 // string readerTypeString = reader.ReadString();
-				string originalReaderTypeString = _reader.ReadString();
- 
-				// Need to resolve namespace differences
-				string readerTypeString = originalReaderTypeString;
-								
-				readerTypeString = PrepareType(readerTypeString);
+                string originalReaderTypeString = _reader.ReadString();
 
-				Type l_readerType = Type.GetType(readerTypeString);
-				
-            	if(l_readerType !=null)
-					contentReaders[i] = (ContentTypeReader)Activator.CreateInstance(l_readerType,true);
-            	else
-					throw new ContentLoadException("Could not find matching content reader of type " + originalReaderTypeString + " (" + readerTypeString + ")");
-				
-				// I think the next 4 bytes refer to the "Version" of the type reader,
+                Func<ContentTypeReader> readerFunc;
+                if (typeCreators.TryGetValue(originalReaderTypeString, out readerFunc))
+                {
+                    contentReaders[i] = readerFunc();
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine(originalReaderTypeString);
+
+                    // Need to resolve namespace differences
+                    string readerTypeString = originalReaderTypeString;
+
+                    readerTypeString = PrepareType(readerTypeString);
+
+                    var l_readerType = Type.GetType(readerTypeString);
+                    if (l_readerType != null)
+                    {
+                        try
+                        {
+                            contentReaders[i] = l_readerType.GetDefaultConstructor().Invoke(null) as ContentTypeReader;
+                        }
+                        catch (TargetInvocationException ex)
+                        {
+                            // If you are getting here, the Mono runtime is most likely not able to JIT the type.
+                            // In particular, MonoTouch needs help instantiating types that are only defined in strings in Xnb files. 
+                            throw new InvalidOperationException(
+                                "Failed to get default constructor for ContentTypeReader. To work around, add a creation function to ContentTypeReaderManager.AddTypeCreator() " +
+                                "with the following failed type string: " + originalReaderTypeString);
+                        }
+                    }
+                    else
+                        throw new ContentLoadException("Could not find matching content reader of type " + originalReaderTypeString + " (" + readerTypeString + ")");
+                }
+
+                // I think the next 4 bytes refer to the "Version" of the type reader,
                 // although it always seems to be zero
                 int typeReaderVersion = _reader.ReadInt32();
             }
 
             return contentReaders;
         }
-		
-		/// <summary>
-		/// Removes Version, Culture and PublicKeyToken from a type string.
-		/// </summary>
-		/// <remarks>
-		/// Supports multiple generic types (e.g. Dictionary<TKey,TValue>) and nested generic types (e.g. List<List<int>>).
-		/// </remarks> 
-		/// <param name="type">
-		/// A <see cref="System.String"/>
-		/// </param>
-		/// <returns>
-		/// A <see cref="System.String"/>
-		/// </returns>
-		public static string PrepareType(string type)
-		{			
-			//Needed to support nested types
-			int count = type.Split(new[] {"[["}, StringSplitOptions.None).Length - 1;
-			
-			string preparedType = type;
-			
-			for(int i=0; i<count; i++)
-			{
-				preparedType = Regex.Replace(preparedType, @"\[(.+?), Version=.+?\]", "[$1]");
-			}
-						
-			//Handle non generic types
-			if(preparedType.Contains("PublicKeyToken"))
-				preparedType = Regex.Replace(preparedType, @"(.+?), Version=.+?$", "$1");
-			
-			preparedType = preparedType.Replace(", Microsoft.Xna.Framework.Graphics", string.Format(", {0}", assemblyName));
-			preparedType = preparedType.Replace(", Microsoft.Xna.Framework", string.Format(", {0}", assemblyName));
-			
-			return preparedType;
-		}
+
+        /// <summary>
+        /// Removes Version, Culture and PublicKeyToken from a type string.
+        /// </summary>
+        /// <remarks>
+        /// Supports multiple generic types (e.g. Dictionary<TKey,TValue>) and nested generic types (e.g. List<List<int>>).
+        /// </remarks> 
+        /// <param name="type">
+        /// A <see cref="System.String"/>
+        /// </param>
+        /// <returns>
+        /// A <see cref="System.String"/>
+        /// </returns>
+        public static string PrepareType(string type)
+        {
+            //Needed to support nested types
+            int count = type.Split(new[] { "[[" }, StringSplitOptions.None).Length - 1;
+
+            string preparedType = type;
+
+            for (int i = 0; i < count; i++)
+            {
+                preparedType = Regex.Replace(preparedType, @"\[(.+?), Version=.+?\]", "[$1]");
+            }
+
+            //Handle non generic types
+            if (preparedType.Contains("PublicKeyToken"))
+                preparedType = Regex.Replace(preparedType, @"(.+?), Version=.+?$", "$1");
+
+            // TODO: For WinRT this is most likely broken!
+            preparedType = preparedType.Replace(", Microsoft.Xna.Framework.Graphics", string.Format(", {0}", assemblyName));
+            preparedType = preparedType.Replace(", Microsoft.Xna.Framework", string.Format(", {0}", assemblyName));
+
+            return preparedType;
+        }
+
+        // Static map of type names to creation functions. Required as iOS requires all types at compile time
+        private static Dictionary<string, Func<ContentTypeReader>> typeCreators = new Dictionary<string, Func<ContentTypeReader>>();
+
+        /// <summary>
+        /// Adds the type creator.
+        /// </summary>
+        /// <param name='typeString'>
+        /// Type string.
+        /// </param>
+        /// <param name='createFunction'>
+        /// Create function.
+        /// </param>
+        public static void AddTypeCreator(string typeString, Func<ContentTypeReader> createFunction)
+        {
+            typeCreators.Add(typeString, createFunction);
+        }
     }
 }

@@ -43,8 +43,6 @@ purpose and non-infringement.
 using System;
 using System.Reflection;
 
-using Microsoft.Xna.Framework.Content;
-
 namespace Microsoft.Xna.Framework.Content
 {
     internal class ReflectiveReader<T> : ContentTypeReader
@@ -53,34 +51,39 @@ namespace Microsoft.Xna.Framework.Content
         PropertyInfo[] properties;
         FieldInfo[] fields;
         ContentTypeReaderManager manager;
-		
-		Type targetType;
-		Type baseType;
-		ContentTypeReader baseTypeReader;
 
-        internal ReflectiveReader() : base(typeof(T))
+        Type targetType;
+        Type baseType;
+        ContentTypeReader baseTypeReader;
+
+        internal ReflectiveReader()
+            : base(typeof(T))
         {
-			targetType = typeof(T);
+            targetType = typeof(T);
         }
 
         protected internal override void Initialize(ContentTypeReaderManager manager)
         {
             base.Initialize(manager);
             this.manager = manager;
-			
-			if(targetType.BaseType != null && targetType.BaseType != typeof(object))
-			{
-				baseType = targetType.BaseType;
-				baseTypeReader = manager.GetTypeReader(baseType);
-			}
-			
-            BindingFlags attrs = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-			constructor = targetType.GetConstructor(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, new Type[0], null);
-            properties = targetType.GetProperties(attrs);
-            fields = targetType.GetFields(attrs);
+
+#if WINRT
+            var type = targetType.GetTypeInfo().BaseType;
+#else
+            var type = targetType.BaseType;
+#endif
+            if (type != null && type != typeof(object))
+            {
+                baseType = type;
+                baseTypeReader = manager.GetTypeReader(baseType);
+            }
+
+            constructor = targetType.GetDefaultConstructor();
+            properties = targetType.GetProperties();
+            fields = targetType.GetFields();
         }
 
-        object CreateChildObject(PropertyInfo property, FieldInfo field)
+        static object CreateChildObject(PropertyInfo property, FieldInfo field)
         {
             object obj = null;
             Type t;
@@ -92,12 +95,18 @@ namespace Microsoft.Xna.Framework.Content
             {
                 t = field.FieldType;
             }
+
+#if WINRT
+            var ti = t.GetTypeInfo();
+            if (ti.IsClass && !ti.IsAbstract)
+#else
             if (t.IsClass && !t.IsAbstract)
+#endif
             {
-                ConstructorInfo constructor = t.GetConstructor(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance, null, new Type[0], null);
+                var constructor = t.GetDefaultConstructor();
                 if (constructor != null)
                 {
-                    obj = constructor.Invoke(null);                
+                    obj = constructor.Invoke(null);
                 }
             }
             return obj;
@@ -107,10 +116,42 @@ namespace Microsoft.Xna.Framework.Content
         {
             PropertyInfo property = member as PropertyInfo;
             FieldInfo field = member as FieldInfo;
-            if (property != null && property.CanWrite == false) return;
+            // properties must have public get and set
+            if (property != null && (property.CanWrite == false || property.CanRead == false))
+                return;
+
+            if (property != null && property.Name == "Item")
+            {
+#if WINRT
+                var getMethod = property.GetMethod;
+                var setMethod = property.SetMethod;
+#else
+                var getMethod = property.GetGetMethod();
+                var setMethod = property.GetSetMethod();
+#endif
+
+                if ((getMethod != null && getMethod.GetParameters().Length > 0) ||
+                    (setMethod != null && setMethod.GetParameters().Length > 0))
+                {
+                    /*
+                     * This is presumably a property like this[indexer] and this
+                     * should not get involved in the object deserialization
+                     * */
+                    return;
+                }
+            }
+#if WINRT
+            Attribute attr = member.GetCustomAttribute(typeof(ContentSerializerIgnoreAttribute));
+#else
             Attribute attr = Attribute.GetCustomAttribute(member, typeof(ContentSerializerIgnoreAttribute));
-            if (attr != null) return;
+#endif
+            if (attr != null)
+                return;
+#if WINRT
+            Attribute attr2 = member.GetCustomAttribute(typeof(ContentSerializerAttribute));
+#else
             Attribute attr2 = Attribute.GetCustomAttribute(member, typeof(ContentSerializerAttribute));
+#endif
             bool isSharedResource = false;
             if (attr2 != null)
             {
@@ -121,11 +162,18 @@ namespace Microsoft.Xna.Framework.Content
             {
                 if (property != null)
                 {
+#if WINRT
+                    if ( property.GetMethod != null && !property.GetMethod.IsPublic )
+                        return;
+                    if ( property.SetMethod != null && !property.SetMethod.IsPublic )
+                        return;
+#else
                     foreach (MethodInfo info in property.GetAccessors(true))
                     {
                         if (info.IsPublic == false)
                             return;
                     }
+#endif
                 }
                 else
                 {
@@ -134,21 +182,33 @@ namespace Microsoft.Xna.Framework.Content
                 }
             }
             ContentTypeReader reader = null;
+
+            Type elementType = null;
+
             if (property != null)
             {
-                reader = manager.GetTypeReader(property.PropertyType);
+                reader = manager.GetTypeReader(elementType = property.PropertyType);
             }
             else
             {
-                reader = manager.GetTypeReader(field.FieldType);
+                reader = manager.GetTypeReader(elementType = field.FieldType);
             }
             if (!isSharedResource)
             {
                 object existingChildObject = CreateChildObject(property, field);
-                object obj2 = null;
-				
-                obj2 = input.ReadObject<object>(reader, existingChildObject);
-				
+                object obj2;
+
+                if (reader == null && elementType == typeof(object))
+                {
+                    /* Reading elements serialized as "object" */
+                    obj2 = input.ReadObject<object>();
+                }
+                else
+                {
+                    /* Default */
+                    obj2 = input.ReadObject(reader, existingChildObject);
+                }
+
                 if (property != null)
                 {
                     property.SetValue(parent, obj2, null);
@@ -173,10 +233,10 @@ namespace Microsoft.Xna.Framework.Content
                         field.SetValue(parent, value);
                     }
                 };
-                input.ReadSharedResource<object>(action);
+                input.ReadSharedResource(action);
             }
         }
-        
+
         protected internal override object Read(ContentReader input, object existingInstance)
         {
             T obj;
@@ -188,18 +248,22 @@ namespace Microsoft.Xna.Framework.Content
             {
                 obj = (constructor == null ? (T)Activator.CreateInstance(typeof(T), false) : (T)constructor.Invoke(null));
             }
-			
-			if(baseTypeReader != null)
-				baseTypeReader.Read(input, obj);
-			
-            foreach (PropertyInfo property in properties)
-            {
-                Read(obj, input, property);
-            }
-            foreach (FieldInfo field in fields)
-            {
-                Read(obj, input, field);
-            }
+
+            if (baseTypeReader != null)
+                baseTypeReader.Read(input, obj);
+
+            // Box the type.
+            var boxed = (object)obj;
+
+            foreach (var property in properties)
+                Read(boxed, input, property);
+
+            foreach (var field in fields)
+                Read(boxed, input, field);
+
+            // Unbox it... required for value types.
+            obj = (T)boxed;
+
             return obj;
         }
     }
