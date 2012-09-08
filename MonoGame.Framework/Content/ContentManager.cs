@@ -159,24 +159,24 @@ namespace Microsoft.Xna.Framework.Content
             }
 
             // Check for a previously loaded asset first
-            object asset = null;
-            if (loadedAssets.TryGetValue(assetName, out asset))
-            {
-                if (asset is T)
-                {
-                    return (T)asset;
-                }
-            }
+            //object asset = null;
+            //if (loadedAssets.TryGetValue(assetName, out asset))
+            //{
+            //    if (asset is T)
+            //    {
+            //        return (T)asset;
+            //    }
+            //}
 
             // Load the asset.
             var result = ReadAsset<T>(assetName, null);
 
-            // Cache the result.
-            if (!loadedAssets.ContainsKey(assetName))
-            {
+            //// Cache the result.
+            //if (!loadedAssets.ContainsKey(assetName))
+            //{
 
-                loadedAssets.Add(assetName, result);
-            }
+            //    loadedAssets.Add(assetName, result);
+            //}
 
             return result;
         }
@@ -208,9 +208,6 @@ namespace Microsoft.Xna.Framework.Content
             assetName = GetFilename(assetName);
             if (!Path.HasExtension(assetName))
             {
-
-
-
                 // Get the real file name
                 if ((typeof(T) == typeof(Curve)))
                 {

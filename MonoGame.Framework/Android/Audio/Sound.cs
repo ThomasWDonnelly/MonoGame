@@ -98,8 +98,20 @@ namespace Microsoft.Xna.Framework.Audio
 
         public Sound(string filename, float volume, bool looping)
         {
-            using (AssetFileDescriptor fd = Game.Activity.Assets.OpenFd(filename))
-                _soundId = s_soundPool.Load(fd.FileDescriptor, fd.StartOffset, fd.Length, 1);
+            if (System.IO.File.Exists(filename))
+            {
+                _soundId = s_soundPool.Load(filename, 1);
+            }
+            else
+            {
+                // todo: opening a file descriptor at offset 1.0f will cause
+                // errors if a file is smaller than one half kilobyte long or so...
+                using (AssetFileDescriptor fd = Game.Activity.Assets.OpenFd(filename))
+                    _soundId = s_soundPool.Load(fd.FileDescriptor, fd.StartOffset, fd.Length, 1);
+            }
+
+            //using (AssetFileDescriptor fd = Game.Activity.Assets.OpenFd(filename))
+              //  _soundId = s_soundPool.Load(fd.FileDescriptor, fd.StartOffset, fd.Length, 1);
 
             this.Looping = looping;
             this.Volume = volume;

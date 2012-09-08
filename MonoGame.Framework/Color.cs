@@ -174,7 +174,7 @@ namespace Microsoft.Xna.Framework
         public const uint TURQUOISE_VALUE = 0xff40e0d0;
         public const uint VIOLET_VALUE = 0xffee82ee;
         public const uint WHEAT_VALUE = 0xfff5deb3;
-        public const uint WHITE_VALUE = uint.MaxValue;
+        public const uint WHITE_VALUE = 0xffffffff;
         public const uint WHITESMOKE_VALUE = 0xfff5f5f5;
         public const uint YELLOW_VALUE = 0xffffff00;
         public const uint YELLOWGREEN_VALUE = 0xff9acd32;
