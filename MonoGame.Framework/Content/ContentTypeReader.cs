@@ -45,10 +45,10 @@ namespace Microsoft.Xna.Framework.Content
 
         private Type targetType;
 #if ANDROID
-        // Keep this static so we only call Game.Activity.Assets.List() once
-        // No need to call it for each file if the list will never change.
-        // We do need one file list per folder though.
-        static Dictionary<string, string[]> filesInFolders = new Dictionary<string, string[]>();
+		// Keep this static so we only call Game.Activity.Assets.List() once
+		// No need to call it for each file if the list will never change.
+		// We do need one file list per folder though.
+		static Dictionary<string, string[]> filesInFolders = new Dictionary<string,string[]>();
 #endif
 
         #endregion Private Member Variables
@@ -120,11 +120,11 @@ namespace Microsoft.Xna.Framework.Content
                 return null;
             }
 
-            // FirstOrDefault returns null as the default if the file is not found. This crashed Path.Combine so check
-            // for it first.
-            string file2 = files.FirstOrDefault(s => extensions.Any(ext => s.ToLower() == (file.ToLower() + ext)));
-            if (String.IsNullOrEmpty(file2))
-                return null;
+			// FirstOrDefault returns null as the default if the file is not found. This crashed Path.Combine so check
+			// for it first.
+			string file2 = files.FirstOrDefault(s => extensions.Any(ext => s.ToLower() == (file.ToLower() + ext)));
+			if (String.IsNullOrEmpty(file2))
+				return null;
             return Path.Combine(path, file2);
         }
 #else
@@ -178,19 +178,17 @@ namespace Microsoft.Xna.Framework.Content
 
         protected internal override object Read(ContentReader input, object existingInstance)
         {
-            // as per the documentation http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.contenttypereader.read.aspx
-            // existingInstance
-            // The object receiving the data, or null if a new instance of the object should be created.
-            if (existingInstance == null)
-            {
-                return this.Read(input, default(T));
-            }
-            else
-            {
-                return this.Read(input, (T)existingInstance);
-            }
+			// as per the documentation http://msdn.microsoft.com/en-us/library/microsoft.xna.framework.content.contenttypereader.read.aspx
+			// existingInstance
+			// The object receiving the data, or null if a new instance of the object should be created.
+			if (existingInstance == null) {
+				return this.Read (input, default(T));
+			} 
+			else {
+				return this.Read (input, (T)existingInstance);
+			}
 
-            //return Read(input, (T)existingInstance);
+		//return Read(input, (T)existingInstance);
         }
 
         protected internal abstract T Read(ContentReader input, T existingInstance);

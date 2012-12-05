@@ -44,11 +44,19 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Runtime.Remoting.Messaging;
-
-using Microsoft.Xna.Framework.Net;
 using Microsoft.Xna.Framework.Storage;
 
+#if WINRT
+using System.Threading.Tasks;
+using Windows.ApplicationModel;
+using Windows.ApplicationModel.Store;
+using Windows.UI.Core;
+using Windows.UI.Popups;
+using Windows.System;
+#else
+using System.Runtime.Remoting.Messaging;
+using Microsoft.Xna.Framework.Net;
+#endif
 
 #endregion Using clause
 
@@ -62,6 +70,24 @@ namespace Microsoft.Xna.Framework.GamerServices
 		private static bool isTrialMode;
 		private static bool isVisible;
 		private static bool simulateTrialMode;		
+
+#if WINRT
+	    private static readonly CoreDispatcher _dispatcher;
+#endif 
+        static Guide()
+        {
+#if WINRT
+            _dispatcher = Windows.UI.Core.CoreWindow.GetForCurrentThread().Dispatcher;
+            
+            var licenseInformation = CurrentApp.LicenseInformation;
+            licenseInformation.LicenseChanged += () => 
+                isTrialMode = !licenseInformation.IsActive || licenseInformation.IsTrial;
+
+            isTrialMode = !licenseInformation.IsActive || licenseInformation.IsTrial;
+
+#endif // WINRT
+
+        }
 
 		delegate string ShowKeyboardInputDelegate(
 		 PlayerIndex player,           
@@ -77,25 +103,21 @@ namespace Microsoft.Xna.Framework.GamerServices
          string defaultText,
 		 bool usePasswordMode)
 		{
-			string result = defaultText; 
+#if WINRT
+            // At this time there is no way to popup the 
+            // software keyboard on a WinRT device unless 
+            // you use a XAML control.
+            throw new NotSupportedException();
+#else
+            throw new NotImplementedException();
+#endif
+            IsVisible = true;
+            string result;
 
-            //TextFieldAlertView myAlertView = new TextFieldAlertView(usePasswordMode, title, defaultText);
+            // Enter the actual implementation here after removing the exception above
 
-
-            //myAlertView.Title = title;
-            //myAlertView.Message = description;
-
-            //myAlertView.Clicked += delegate(object sender, UIButtonEventArgs e)
-            //        {
-            //            if (e.ButtonIndex == 1)
-            //            {
-            //                    result = ((UIAlertView) sender).Subviews.OfType<UITextField>().Single().Text;
-            //            }
-            //        };
-            //myAlertView.Transform = MonoTouch.CoreGraphics.CGAffineTransform.MakeTranslation (0f, 110f);
-            //myAlertView.Show();
-
-			return result;
+            IsVisible = false;
+            return result;
 		}
 
 		public static IAsyncResult BeginShowKeyboardInput (
@@ -118,8 +140,6 @@ namespace Microsoft.Xna.Framework.GamerServices
          Object state,
          bool usePasswordMode)
 		{
-			isVisible = true;
-
 			ShowKeyboardInputDelegate ski = ShowKeyboardInput; 
 
 			return ski.BeginInvoke(player, title, description, defaultText, usePasswordMode, callback, ski);
@@ -127,16 +147,9 @@ namespace Microsoft.Xna.Framework.GamerServices
 
 		public static string EndShowKeyboardInput (IAsyncResult result)
 		{
-			try 
-			{
-				ShowKeyboardInputDelegate ski = (ShowKeyboardInputDelegate)result.AsyncState; 
+			ShowKeyboardInputDelegate ski = (ShowKeyboardInputDelegate)result.AsyncState; 
 
-				return ski.EndInvoke(result);
-			} 
-			finally 
-			{
-				isVisible = false;
-			}			
+			return ski.EndInvoke(result);		
 		}
 
 		delegate Nullable<int> ShowMessageBoxDelegate( string title,
@@ -145,20 +158,40 @@ namespace Microsoft.Xna.Framework.GamerServices
          int focusButton,
          MessageBoxIcon icon);
 
-		public static Nullable<int> ShowMessageBox( string title,
+        public static Nullable<int> ShowMessageBox(string title,
          string text,
          IEnumerable<string> buttons,
          int focusButton,
          MessageBoxIcon icon)
-		{
-			Nullable<int> result = null;
+        {
+            int? result = null;
+            IsVisible = true;
 
-			
+#if WINDOWS_STOREAPP
+            MessageDialog dialog = new MessageDialog(text, title);
+            foreach (string button in buttons)
+                dialog.Commands.Add(new UICommand(button, null, dialog.Commands.Count));
 
-			return result;
-		}
+            if (focusButton < 0 || focusButton >= dialog.Commands.Count)
+                throw new ArgumentOutOfRangeException("focusButton", "Specified argument was out of the range of valid values.");
+            dialog.DefaultCommandIndex = (uint)focusButton;
 
-		public static IAsyncResult BeginShowMessageBox(
+            // The message box must be popped up on the UI thread.
+            Task<IUICommand> dialogResult = null;
+            _dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+                dialogResult = dialog.ShowAsync().AsTask();
+            }).AsTask().Wait();
+
+            dialogResult.Wait();
+            result = (int)dialogResult.Result.Id;
+
+#endif
+            IsVisible = false;
+            return result;
+        }
+
+        public static IAsyncResult BeginShowMessageBox(
          PlayerIndex player,
          string title,
          string text,
@@ -167,16 +200,27 @@ namespace Microsoft.Xna.Framework.GamerServices
          MessageBoxIcon icon,
          AsyncCallback callback,
          Object state
-		)
-		{	
-			isVisible = true;
+        )
+        {
+            // TODO: GuideAlreadyVisibleException
+            if (IsVisible)
+                throw new Exception("The function cannot be completed at this time: the Guide UI is already active. Wait until Guide.IsVisible is false before issuing this call.");
 
-			ShowMessageBoxDelegate smb = ShowMessageBox; 
+            if (player != PlayerIndex.One)
+                throw new ArgumentOutOfRangeException("player", "Specified argument was out of the range of valid values.");
+            if (title == null)
+                throw new ArgumentNullException("title", "This string cannot be null or empty, and must be less than 256 characters long.");
+            if (text == null)
+                throw new ArgumentNullException("text", "This string cannot be null or empty, and must be less than 256 characters long.");
+            if (buttons == null)
+                throw new ArgumentNullException("buttons", "Value can not be null.");
 
-			return smb.BeginInvoke(title, text, buttons, focusButton, icon, callback, smb);			
-		}
+            ShowMessageBoxDelegate smb = ShowMessageBox;
 
-		public static IAsyncResult BeginShowMessageBox (
+            return smb.BeginInvoke(title, text, buttons, focusButton, icon, callback, smb);
+        }
+
+        public static IAsyncResult BeginShowMessageBox(
          string title,
          string text,
          IEnumerable<string> buttons,
@@ -184,29 +228,25 @@ namespace Microsoft.Xna.Framework.GamerServices
          MessageBoxIcon icon,
          AsyncCallback callback,
          Object state
-		)
+        )
+        {
+            return BeginShowMessageBox(PlayerIndex.One, title, text, buttons, focusButton, icon, callback, state);
+        }
+
+        public static Nullable<int> EndShowMessageBox(IAsyncResult result)
+        {
+            return ((ShowMessageBoxDelegate)result.AsyncState).EndInvoke(result);
+        }
+
+		public static void ShowMarketplace(PlayerIndex player)
 		{
-			return BeginShowMessageBox(PlayerIndex.One, title, text, buttons, focusButton, icon, callback, state);
-		}
-
-		public static Nullable<int> EndShowMessageBox (IAsyncResult result)
-		{
-			try
-			{
-				ShowMessageBoxDelegate smbd = (ShowMessageBoxDelegate)result.AsyncState; 
-
-				return smbd.EndInvoke(result);
-			} 
-			finally 
-			{
-				isVisible = false;
-			}
-		}
-
-
-		public static void ShowMarketplace (PlayerIndex player )
-		{
-			
+#if WINRT
+            _dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            {
+                var uri = new Uri(@"ms-windows-store:PDP?PFN=" + Package.Current.Id.FamilyName);
+                Launcher.LaunchUriAsync(uri).AsTask<bool>().Wait();
+            }).AsTask();
+#endif
 		}
 
 		public static void Show ()
@@ -222,6 +262,7 @@ namespace Microsoft.Xna.Framework.GamerServices
 				return;
 			}
 
+#if !WINRT
             Microsoft.Xna.Framework.GamerServices.MonoGameGamerServicesHelper.ShowSigninSheet();            
 
             if (GamerServicesComponent.LocalNetworkGamer == null)
@@ -232,6 +273,7 @@ namespace Microsoft.Xna.Framework.GamerServices
             {
                 GamerServicesComponent.LocalNetworkGamer.SignedInGamer.BeginAuthentication(null, null);
             }
+#endif
 		}
 
 		public static void ShowLeaderboard()
@@ -329,12 +371,14 @@ namespace Microsoft.Xna.Framework.GamerServices
 		{ 
 			get
 			{
-				return isTrialMode;
-			}
-			set
-			{
-				isTrialMode = value;
-			}
+				// If simulate trial mode is enabled then 
+				// we're in the trial mode.
+#if DEBUG
+                return simulateTrialMode;
+#else
+                return simulateTrialMode || isTrialMode;
+#endif
+            }
 		}
 
 		public static bool IsVisible 
@@ -370,7 +414,9 @@ namespace Microsoft.Xna.Framework.GamerServices
 
         internal static void Initialise(Game game)
         {
+#if !WINRT
             MonoGameGamerServicesHelper.Initialise(game);
+#endif
         }
     }
 }
